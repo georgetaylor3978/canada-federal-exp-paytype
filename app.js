@@ -83,6 +83,13 @@ function buildDropdown(deptGroups, ministries, data, listEl, type) {
     });
 
     var html = '';
+    // Add "All" option at the very top
+    var allCheckbox = type === 'compare' ? '<div class="dd-checkbox"></div>' : '';
+    html += '<div class="dd-item is-parent" data-type="all" data-id="-1" style="border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 6px; padding-bottom: 12px;">' +
+        allCheckbox +
+        '<span class="dd-icon">🇨🇦</span>' +
+        '<span class="dd-text">All (Total Federal)</span>' +
+        '</div>';
     for (var d = 0; d < sortedDepts.length; d++) {
         var dIdx = sortedDepts[d];
         var deptName = deptGroups[dIdx];
@@ -247,6 +254,7 @@ function getSeriesData(selection, expensesFilter, combine) {
         var r = dataJson.data[i];
         var yIdx = r[0], dIdx = r[1], mIdx = r[2], eIdx = r[3], amt = r[4];
 
+        // type 'all' skips all filtering — includes everything
         if (type === 'deptGroup' && dIdx !== id) continue;
         if (type === 'ministry' && mIdx !== id) continue;
 
@@ -288,9 +296,14 @@ function updateChart() {
 
     var mainSeries = getSeriesData(selectedMain, selectedExpenses, isCombineOn);
 
-    var mainName = selectedMain.type === 'deptGroup'
-        ? dataJson.deptGroups[selectedMain.id]
-        : dataJson.ministries[selectedMain.id];
+    var mainName;
+    if (selectedMain.type === 'all') {
+        mainName = 'All Federal Departments';
+    } else if (selectedMain.type === 'deptGroup') {
+        mainName = dataJson.deptGroups[selectedMain.id];
+    } else {
+        mainName = dataJson.ministries[selectedMain.id];
+    }
 
     chartTitle.textContent = mainName + ' — Expenses';
 
@@ -323,7 +336,7 @@ function updateChart() {
     document.getElementById('valAvg').textContent = mainSeries.length ? formatValue(totalAmt / mainSeries.length) : '—';
 
     // Build Chart Data
-    if (!isCombineOn && selectedCompare.size === 0) {
+    if (!isCombineOn) {
         // Stacked Bar for main selection
         var expArray = Array.from(selectedExpenses);
         expArray.forEach(function (eIdx) {
@@ -371,7 +384,10 @@ function updateChart() {
             var cType = parts[0];
             var cId = Number(parts[1]);
             var cSer = getSeriesData({ type: cType, id: cId }, selectedExpenses, true);
-            var cName = cType === 'deptGroup' ? dataJson.deptGroups[cId] : dataJson.ministries[cId];
+            var cName;
+            if (cType === 'all') { cName = 'All Federal Departments'; }
+            else if (cType === 'deptGroup') { cName = dataJson.deptGroups[cId]; }
+            else { cName = dataJson.ministries[cId]; }
 
             var cDataPoints = labels.map(function (yr) {
                 var found = cSer.find(function (s) { return s.year === yr; });
