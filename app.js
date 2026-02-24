@@ -11,15 +11,25 @@ var selectedCompare = new Set();
 var selectedExpenses = new Set();
 var isCombineOn = true;
 
-// Predefined colors for charts
-var PALETTE = [
-    '#3b82f6', // blue
+// Predefined colors for expense types (indexed by expenseType order)
+// 0: Debt charges = Rose/Red
+// 1: Major transfer payments = Blue
+// 2: Other expenses = Amber
+// 3: Other transfer payments = Cyan/Light Blue
+var EXPENSE_COLORS = [
+    '#f43f5e', // rose-red — Debt charges
+    '#3b82f6', // blue — Major transfer payments
+    '#f59e0b', // amber — Other expenses
+    '#06b6d4', // cyan — Other transfer payments
+];
+
+// Colors for Compare With lines (cycle through these)
+var COMPARE_COLORS = [
     '#10b981', // emerald
-    '#f59e0b', // amber
     '#8b5cf6', // violet
     '#ec4899', // pink
+    '#f59e0b', // amber
     '#06b6d4', // cyan
-    '#f43f5e', // rose
 ];
 
 // DOM Nodes
@@ -122,7 +132,7 @@ function buildDropdown(deptGroups, ministries, data, listEl, type) {
 function buildSlicers() {
     var html = '';
     dataJson.expenseTypes.forEach(function (ex, i) {
-        var color = PALETTE[i % PALETTE.length];
+        var color = EXPENSE_COLORS[i % EXPENSE_COLORS.length];
         html += '<button class="slicer-btn active" data-id="' + i + '">' +
             '<span class="slicer-color-indicator" style="background-color: ' + color + '"></span>' +
             ex +
@@ -308,32 +318,7 @@ function updateChart() {
     chartTitle.textContent = mainName + ' — Expenses';
 
     // Summary Stats
-    var totalAmt = 0;
-    var peakAmt = 0;
-    var peakYr = '—';
-    var recentAmt = 0;
-    var recentYr = '—';
-
-    if (mainSeries.length > 0) {
-        for (var i = 0; i < mainSeries.length; i++) {
-            var pt = mainSeries[i];
-            totalAmt += pt.total;
-            if (pt.total > peakAmt) {
-                peakAmt = pt.total;
-                peakYr = pt.year;
-            }
-        }
-        var last = mainSeries[mainSeries.length - 1];
-        recentAmt = last.total;
-        recentYr = last.year;
-    }
-
-    document.getElementById('valTotal').textContent = formatValue(totalAmt);
-    document.getElementById('valPeakYear').textContent = peakYr;
-    document.getElementById('valPeakAmount').textContent = formatValue(peakAmt);
-    document.getElementById('valRecentYear').textContent = recentYr;
-    document.getElementById('valRecentAmount').textContent = formatValue(recentAmt);
-    document.getElementById('valAvg').textContent = mainSeries.length ? formatValue(totalAmt / mainSeries.length) : '—';
+    updateSummaryCards(mainSeries, selectedMain);
 
     // Build Chart Data
     if (!isCombineOn) {
@@ -341,7 +326,7 @@ function updateChart() {
         var expArray = Array.from(selectedExpenses);
         expArray.forEach(function (eIdx) {
             var expName = dataJson.expenseTypes[eIdx];
-            var color = PALETTE[eIdx % PALETTE.length];
+            var color = EXPENSE_COLORS[eIdx % EXPENSE_COLORS.length];
 
             var dataPoints = labels.map(function (yr) {
                 var found = mainSeries.find(function (s) { return s.year === yr; });
@@ -350,7 +335,7 @@ function updateChart() {
 
             datasets.push({
                 type: 'bar',
-                label: mainName + ' — ' + expName,
+                label: expName,
                 data: dataPoints,
                 backgroundColor: color,
                 borderColor: 'transparent',
@@ -378,7 +363,7 @@ function updateChart() {
 
     // Add Comparisons
     if (selectedCompare.size > 0) {
-        var colorIdx = 2;
+        var colorIdx = 0;
         selectedCompare.forEach(function (compKey) {
             var parts = compKey.split(':');
             var cType = parts[0];
@@ -398,7 +383,7 @@ function updateChart() {
                 type: 'line',
                 label: cName + ' (Compare)',
                 data: cDataPoints,
-                borderColor: PALETTE[colorIdx % PALETTE.length],
+                borderColor: COMPARE_COLORS[colorIdx % COMPARE_COLORS.length],
                 backgroundColor: 'transparent',
                 borderWidth: 3,
                 tension: 0.3,
@@ -449,6 +434,72 @@ function updateChart() {
             scales: scales
         }
     });
+}
+
+// Summary Cards
+function updateSummaryCards(mainSeries, selection) {
+    if (!mainSeries || mainSeries.length === 0) {
+        document.getElementById('valLatestAmt').textContent = '—';
+        document.getElementById('valLatestYear').textContent = '—';
+        document.getElementById('val10yrGrowth').textContent = '—';
+        document.getElementById('valAvgGrowth').textContent = '—';
+        document.getElementById('valShare').textContent = '—';
+        return;
+    }
+
+    // Sort by year
+    mainSeries.sort(function (a, b) { return a.year - b.year; });
+
+    var latest = mainSeries[mainSeries.length - 1];
+    var latestAmt = latest.total;
+    var latestYear = latest.year;
+
+    // Card 1: Latest Year Expenses
+    document.getElementById('valLatestAmt').textContent = formatValue(latestAmt);
+    document.getElementById('valLatestYear').textContent = 'Year ' + latestYear;
+
+    // Card 2: 10-Year Growth %
+    var tenYearAgo = mainSeries.find(function (s) { return s.year === latestYear - 10; });
+    if (tenYearAgo && tenYearAgo.total > 0) {
+        var growth10 = ((latestAmt - tenYearAgo.total) / tenYearAgo.total) * 100;
+        var el = document.getElementById('val10yrGrowth');
+        el.textContent = (growth10 >= 0 ? '+' : '') + growth10.toFixed(1) + '%';
+        el.style.color = growth10 >= 0 ? '#10b981' : '#f43f5e';
+    } else {
+        document.getElementById('val10yrGrowth').textContent = 'N/A';
+        document.getElementById('val10yrGrowth').style.color = '';
+    }
+
+    // Card 3: Average Annual Growth (CAGR)
+    var earliest = mainSeries[0];
+    var years = latestYear - earliest.year;
+    if (years > 0 && earliest.total > 0 && latestAmt > 0) {
+        var cagr = (Math.pow(latestAmt / earliest.total, 1 / years) - 1) * 100;
+        var el2 = document.getElementById('valAvgGrowth');
+        el2.textContent = (cagr >= 0 ? '+' : '') + cagr.toFixed(1) + '%';
+        el2.style.color = cagr >= 0 ? '#10b981' : '#f43f5e';
+    } else {
+        document.getElementById('valAvgGrowth').textContent = 'N/A';
+        document.getElementById('valAvgGrowth').style.color = '';
+    }
+
+    // Card 4: % of Total Federal Expenses (most recent year)
+    // Only show if NOT already viewing "all"
+    if (selection.type === 'all') {
+        document.getElementById('valShare').textContent = '100%';
+        document.getElementById('valShareYear').textContent = 'Year ' + latestYear;
+    } else {
+        // Get total federal expenses for that year
+        var allSeries = getSeriesData({ type: 'all', id: -1 }, selectedExpenses, true);
+        var allLatest = allSeries.find(function (s) { return s.year === latestYear; });
+        if (allLatest && allLatest.total > 0) {
+            var share = (latestAmt / allLatest.total) * 100;
+            document.getElementById('valShare').textContent = share.toFixed(1) + '%';
+            document.getElementById('valShareYear').textContent = 'Year ' + latestYear;
+        } else {
+            document.getElementById('valShare').textContent = 'N/A';
+        }
+    }
 }
 
 // Start

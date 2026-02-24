@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="index.css">
 </head>
+
 <body>
 
     <!-- Header -->
@@ -15,7 +17,10 @@
         <div class="header-content">
             <div class="logo-area">
                 <div class="logo-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                    </svg>
                 </div>
                 <div>
                     <h1>Federal Expenses Dashboard</h1>
@@ -32,7 +37,7 @@
     <section class="controls-bar">
         <div class="controls-content">
             <div class="controls-row">
-                
+
                 <!-- Main Selection -->
                 <div class="control-group">
                     <label>Department / Ministry</label>
@@ -95,25 +100,25 @@
     <main class="main-content">
         <!-- Summary Cards -->
         <div class="summary-cards">
-            <div class="card" id="cardTotal">
-                <div class="card-label">Total Selected Expr</div>
-                <div class="card-value" id="valTotal">—</div>
-                <div class="card-sub">Sum of all selected types over time</div>
+            <div class="card" id="cardLatest">
+                <div class="card-label">Latest Year Expenses</div>
+                <div class="card-value" id="valLatestAmt">—</div>
+                <div class="card-sub" id="valLatestYear">—</div>
             </div>
-            <div class="card" id="cardPeak">
-                <div class="card-label">Peak Year</div>
-                <div class="card-value" id="valPeakYear">—</div>
-                <div class="card-sub" id="valPeakAmount">—</div>
+            <div class="card" id="card10yr">
+                <div class="card-label">10-Year Growth</div>
+                <div class="card-value" id="val10yrGrowth">—</div>
+                <div class="card-sub">Change over 10 years</div>
             </div>
-            <div class="card" id="cardRecent">
-                <div class="card-label">Latest Year</div>
-                <div class="card-value" id="valRecentYear">—</div>
-                <div class="card-sub" id="valRecentAmount">—</div>
+            <div class="card" id="cardAvgGrowth">
+                <div class="card-label">Avg Annual Growth</div>
+                <div class="card-value" id="valAvgGrowth">—</div>
+                <div class="card-sub">Compound annual rate</div>
             </div>
-            <div class="card" id="cardAvg">
-                <div class="card-label">Annual Average</div>
-                <div class="card-value" id="valAvg">—</div>
-                <div class="card-sub">Over the selected date range</div>
+            <div class="card" id="cardShare">
+                <div class="card-label">% of Total Expenses</div>
+                <div class="card-value" id="valShare">—</div>
+                <div class="card-sub" id="valShareYear">Most recent year</div>
             </div>
         </div>
 
@@ -124,7 +129,12 @@
             </div>
 
             <div class="chart-empty-state" id="emptyState">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M3 3v18h18" />
+                    <path d="M18 17V9" />
+                    <path d="M13 17V5" />
+                    <path d="M8 17v-3" />
+                </svg>
                 <p>Select a Department or Ministry to view expenses.</p>
                 <div class="hint">Use the dropdowns above to explore the data.</div>
             </div>
@@ -136,9 +146,10 @@
     </main>
 
     <footer class="footer">
-        <p>Data Source: CanadaExpPay Raw Data  |  Federal Expenses Dashboard</p>
+        <p>Data Source: CanadaExpPay Raw Data | Federal Expenses Dashboard</p>
     </footer>
 
     <script src="app.js"></script>
 </body>
+
 </html>

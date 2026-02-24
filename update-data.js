@@ -73,7 +73,7 @@ for (let i = 1; i < raw.length; i++) {
     const deptGroup = String(r[colDeptGroup] || 'Unknown').trim();
     const ministry = String(r[colMinistry] || 'Unknown').trim();
     const expenseType = String(r[colExpenseType] || 'Unknown').trim();
-    const amount = Number(r[colAmount]) || 0;
+    const amount = (Number(r[colAmount]) || 0) * 1000; // Raw data is in $1,000s
 
     const yearIdx = getIndex(years, year);
     const deptGroupIdx = getIndex(deptGroups, deptGroup);
