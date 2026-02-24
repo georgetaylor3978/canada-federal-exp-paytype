@@ -2,17 +2,17 @@
    Federal Expenses Dashboard — App Logic
    ═══════════════════════════════════════════ */
 
-let dataJson = null;
-let mainChart = null;
+var dataJson = null;
+var mainChart = null;
 
 // Dynamic State
-let selectedMain = null;      // { type: 'deptGroup'|'ministry', id: index }
-let selectedCompare = new Set(); // set of '{type}:{id}' strings
-let selectedExpenses = new Set(); // set of expense type indices
-let isCombineOn = true;
+var selectedMain = null;
+var selectedCompare = new Set();
+var selectedExpenses = new Set();
+var isCombineOn = true;
 
-// Predefined colors for charts (especially stacked)
-const PALETTE = [
+// Predefined colors for charts
+var PALETTE = [
     '#3b82f6', // blue
     '#10b981', // emerald
     '#f59e0b', // amber
@@ -22,54 +22,53 @@ const PALETTE = [
     '#f43f5e', // rose
 ];
 
-// ── DOM Nodes
-const mainDropdownTrigger = document.getElementById('mainDropdownTrigger');
-const mainDropdownMenu = document.getElementById('mainDropdownMenu');
-const mainSearch = document.getElementById('mainSearch');
-const mainList = document.getElementById('mainList');
+// DOM Nodes
+var mainDropdownTrigger = document.getElementById('mainDropdownTrigger');
+var mainSearch = document.getElementById('mainSearch');
+var mainList = document.getElementById('mainList');
 
-const compareDropdownTrigger = document.getElementById('compareDropdownTrigger');
-const compareDropdownMenu = document.getElementById('compareDropdownMenu');
-const compareSearch = document.getElementById('compareSearch');
-const compareList = document.getElementById('compareList');
-const compareClearBtn = document.getElementById('compareClearBtn');
+var compareDropdownTrigger = document.getElementById('compareDropdownTrigger');
+var compareSearch = document.getElementById('compareSearch');
+var compareList = document.getElementById('compareList');
+var compareClearBtn = document.getElementById('compareClearBtn');
 
-const expenseTypeSlicer = document.getElementById('expenseTypeSlicer');
-const combineToggle = document.getElementById('combineToggle');
-const emptyState = document.getElementById('emptyState');
-const chartWrapper = document.querySelector('.chart-wrapper');
-const chartTitle = document.getElementById('chartTitle');
+var expenseTypeSlicer = document.getElementById('expenseTypeSlicer');
+var combineToggle = document.getElementById('combineToggle');
+var emptyState = document.getElementById('emptyState');
+var chartWrapper = document.querySelector('.chart-wrapper');
+var chartTitle = document.getElementById('chartTitle');
 
-// ── Init
+// Init
 async function init() {
     try {
-        const res = await fetch('data.json');
+        var res = await fetch('data.json');
         if (!res.ok) throw new Error('Could not load data.json');
         dataJson = await res.json();
 
         // initialize selections
-        dataJson.expenseTypes.forEach((_, i) => selectedExpenses.add(i));
+        dataJson.expenseTypes.forEach(function (_, i) { selectedExpenses.add(i); });
 
         buildDropdown(dataJson.deptGroups, dataJson.ministries, dataJson.data, mainList, 'main');
         buildDropdown(dataJson.deptGroups, dataJson.ministries, dataJson.data, compareList, 'compare');
         buildSlicers();
 
         setupEvents();
+        console.log('Dashboard initialized successfully with ' + dataJson.data.length + ' data points.');
     } catch (e) {
-        console.error(e);
+        console.error('Init error:', e);
         document.getElementById('dataStatus').textContent = 'Error Loading Data';
         document.getElementById('dataStatus').classList.remove('loaded');
         document.getElementById('dataStatus').style.color = '#f43f5e';
     }
 }
 
-// ── Dropdown Builders
-// We group ministries by DeptGroup based on the data rows
+// Dropdown Builders
 function extractHierarchy() {
-    const hierarchy = {}; // { deptGroupIdx: Set(ministryIdx) }
-    for (const r of dataJson.data) {
-        const dIdx = r[1];
-        const mIdx = r[2];
+    var hierarchy = {};
+    for (var i = 0; i < dataJson.data.length; i++) {
+        var r = dataJson.data[i];
+        var dIdx = r[1];
+        var mIdx = r[2];
         if (!hierarchy[dIdx]) hierarchy[dIdx] = new Set();
         hierarchy[dIdx].add(mIdx);
     }
@@ -77,32 +76,36 @@ function extractHierarchy() {
 }
 
 function buildDropdown(deptGroups, ministries, data, listEl, type) {
-    const hierarchy = extractHierarchy();
+    var hierarchy = extractHierarchy();
 
-    // Sort dept groups alphabetically
-    const sortedDepts = Object.keys(hierarchy).map(k => Number(k)).sort((a, b) => deptGroups[a].localeCompare(deptGroups[b]));
+    var sortedDepts = Object.keys(hierarchy).map(function (k) { return Number(k); }).sort(function (a, b) {
+        return deptGroups[a].localeCompare(deptGroups[b]);
+    });
 
-    let html = '';
-    for (const dIdx of sortedDepts) {
-        const deptName = deptGroups[dIdx];
-        const mSet = Array.from(hierarchy[dIdx]).sort((a, b) => ministries[a].localeCompare(ministries[b]));
+    var html = '';
+    for (var d = 0; d < sortedDepts.length; d++) {
+        var dIdx = sortedDepts[d];
+        var deptName = deptGroups[dIdx];
+        var mSet = Array.from(hierarchy[dIdx]).sort(function (a, b) {
+            return ministries[a].localeCompare(ministries[b]);
+        });
 
         // Parent item
-        html += `<div class="dd-item is-parent" data-type="deptGroup" data-id="${dIdx}">
-            ${type === 'compare' ? '<div class="dd-checkbox"></div>' : ''}
-            <span class="dd-icon">🏛️</span>
-            <span class="dd-text">${deptName}</span>
-        </div>`;
+        var checkbox = type === 'compare' ? '<div class="dd-checkbox"></div>' : '';
+        html += '<div class="dd-item is-parent" data-type="deptGroup" data-id="' + dIdx + '">' +
+            checkbox +
+            '<span class="dd-icon">\u{1F3DB}\uFE0F</span>' +
+            '<span class="dd-text">' + deptName + '</span>' +
+            '</div>';
 
         // Children
-        for (const mIdx of mSet) {
-            const minName = ministries[mIdx];
-            // Don't show ministry if name is exactly same as deptGroup (redundant)
-            // Actually, we should show it in case they want strictly that ministry, but we'll indent it
-            html += `<div class="dd-item is-child" data-type="ministry" data-id="${mIdx}">
-                ${type === 'compare' ? '<div class="dd-checkbox"></div>' : ''}
-                <span class="dd-text">${minName}</span>
-            </div>`;
+        for (var m = 0; m < mSet.length; m++) {
+            var mIdx = mSet[m];
+            var minName = ministries[mIdx];
+            html += '<div class="dd-item is-child" data-type="ministry" data-id="' + mIdx + '">' +
+                checkbox +
+                '<span class="dd-text">' + minName + '</span>' +
+                '</div>';
         }
     }
 
@@ -110,50 +113,50 @@ function buildDropdown(deptGroups, ministries, data, listEl, type) {
 }
 
 function buildSlicers() {
-    let html = '';
-    dataJson.expenseTypes.forEach((ex, i) => {
-        const color = PALETTE[i % PALETTE.length];
-        html += `<button class="slicer-btn active" data-id="${i}">
-            <span class="slicer-color-indicator" style="background-color: ${color}"></span>
-            ${ex}
-        </button>`;
+    var html = '';
+    dataJson.expenseTypes.forEach(function (ex, i) {
+        var color = PALETTE[i % PALETTE.length];
+        html += '<button class="slicer-btn active" data-id="' + i + '">' +
+            '<span class="slicer-color-indicator" style="background-color: ' + color + '"></span>' +
+            ex +
+            '</button>';
     });
     expenseTypeSlicer.innerHTML = html;
 }
 
-// ── Events
+// Events
 function setupEvents() {
     // Dropdown toggles
-    document.addEventListener('click', (e) => {
-        // close dropdowns if click outside
+    document.addEventListener('click', function (e) {
         if (!e.target.closest('#mainDropdown')) document.getElementById('mainDropdown').classList.remove('open');
         if (!e.target.closest('#compareDropdown')) document.getElementById('compareDropdown').classList.remove('open');
     });
 
-    mainDropdownTrigger.addEventListener('click', () => {
+    mainDropdownTrigger.addEventListener('click', function (e) {
+        e.stopPropagation();
         document.getElementById('compareDropdown').classList.remove('open');
         document.getElementById('mainDropdown').classList.toggle('open');
     });
 
-    compareDropdownTrigger.addEventListener('click', () => {
+    compareDropdownTrigger.addEventListener('click', function (e) {
+        e.stopPropagation();
         document.getElementById('mainDropdown').classList.remove('open');
         document.getElementById('compareDropdown').classList.toggle('open');
     });
 
     // Main Dropdown Selection
-    mainList.addEventListener('click', (e) => {
-        const item = e.target.closest('.dd-item');
+    mainList.addEventListener('click', function (e) {
+        var item = e.target.closest('.dd-item');
         if (!item) return;
 
-        // remove old selection
-        mainList.querySelectorAll('.dd-item').forEach(el => el.classList.remove('selected'));
+        mainList.querySelectorAll('.dd-item').forEach(function (el) { el.classList.remove('selected'); });
         item.classList.add('selected');
 
-        const type = item.getAttribute('data-type');
-        const id = Number(item.getAttribute('data-id'));
-        selectedMain = { type, id };
+        var type = item.getAttribute('data-type');
+        var id = Number(item.getAttribute('data-id'));
+        selectedMain = { type: type, id: id };
 
-        const text = item.querySelector('.dd-text').textContent;
+        var text = item.querySelector('.dd-text').textContent;
         mainDropdownTrigger.querySelector('.dropdown-label').textContent = text;
 
         document.getElementById('mainDropdown').classList.remove('open');
@@ -161,47 +164,47 @@ function setupEvents() {
     });
 
     // Compare Selection
-    compareList.addEventListener('click', (e) => {
-        const item = e.target.closest('.dd-item');
+    compareList.addEventListener('click', function (e) {
+        var item = e.target.closest('.dd-item');
         if (!item) return;
 
-        const type = item.getAttribute('data-type');
-        const id = Number(item.getAttribute('data-id'));
-        const key = \`\${type}:\${id}\`;
-        
-        if(selectedCompare.has(key)) {
+        var type = item.getAttribute('data-type');
+        var id = Number(item.getAttribute('data-id'));
+        var key = type + ':' + id;
+
+        if (selectedCompare.has(key)) {
             selectedCompare.delete(key);
             item.classList.remove('selected');
         } else {
             selectedCompare.add(key);
             item.classList.add('selected');
         }
-        
-        const label = selectedCompare.size === 0 ? 'None selected' : \`\${selectedCompare.size} selected\`;
+
+        var label = selectedCompare.size === 0 ? 'None selected' : selectedCompare.size + ' selected';
         compareDropdownTrigger.querySelector('.dropdown-label').textContent = label;
-        
+
         updateChart();
     });
 
-    compareClearBtn.addEventListener('click', () => {
+    compareClearBtn.addEventListener('click', function () {
         selectedCompare.clear();
-        compareList.querySelectorAll('.dd-item').forEach(el => el.classList.remove('selected'));
+        compareList.querySelectorAll('.dd-item').forEach(function (el) { el.classList.remove('selected'); });
         compareDropdownTrigger.querySelector('.dropdown-label').textContent = 'None selected';
         updateChart();
     });
 
     // Search filters
-    mainSearch.addEventListener('input', (e) => filterList(e.target.value.toLowerCase(), mainList));
-    compareSearch.addEventListener('input', (e) => filterList(e.target.value.toLowerCase(), compareList));
+    mainSearch.addEventListener('input', function (e) { filterList(e.target.value.toLowerCase(), mainList); });
+    compareSearch.addEventListener('input', function (e) { filterList(e.target.value.toLowerCase(), compareList); });
 
     // Slicers
-    expenseTypeSlicer.addEventListener('click', (e) => {
-        const btn = e.target.closest('.slicer-btn');
-        if(!btn) return;
-        
-        const id = Number(btn.getAttribute('data-id'));
-        if(selectedExpenses.has(id)) {
-            if(selectedExpenses.size === 1) return; // don't allow unselecting last one
+    expenseTypeSlicer.addEventListener('click', function (e) {
+        var btn = e.target.closest('.slicer-btn');
+        if (!btn) return;
+
+        var id = Number(btn.getAttribute('data-id'));
+        if (selectedExpenses.has(id)) {
+            if (selectedExpenses.size === 1) return;
             selectedExpenses.delete(id);
             btn.classList.remove('active');
         } else {
@@ -212,68 +215,65 @@ function setupEvents() {
     });
 
     // Combine Toggle
-    combineToggle.addEventListener('change', (e) => {
+    combineToggle.addEventListener('change', function (e) {
         isCombineOn = e.target.checked;
         updateChart();
     });
 }
 
 function filterList(term, listEl) {
-    const items = listEl.querySelectorAll('.dd-item');
-    items.forEach(item => {
-        const text = item.querySelector('.dd-text').textContent.toLowerCase();
-        if(text.includes(term)) {
-            item.style.display = 'flex';
-        } else {
-            item.style.display = 'none';
-        }
+    var items = listEl.querySelectorAll('.dd-item');
+    items.forEach(function (item) {
+        var text = item.querySelector('.dd-text').textContent.toLowerCase();
+        item.style.display = text.includes(term) ? 'flex' : 'none';
     });
 }
 
-// ── Chart Logic
+// Chart Logic
 function formatValue(val) {
-    if(val >= 1e9) return '$' + (val / 1e9).toFixed(1) + 'B';
-    if(val >= 1e6) return '$' + (val / 1e6).toFixed(1) + 'M';
-    if(val >= 1e3) return '$' + (val / 1e3).toFixed(1) + 'K';
+    if (val >= 1e9) return '$' + (val / 1e9).toFixed(1) + 'B';
+    if (val >= 1e6) return '$' + (val / 1e6).toFixed(1) + 'M';
+    if (val >= 1e3) return '$' + (val / 1e3).toFixed(1) + 'K';
     return '$' + val;
 }
 
 function getSeriesData(selection, expensesFilter, combine) {
-    const { type, id } = selection;
-    // We want data over time (years)
-    
-    // Group by year, then by expense type if combine is false
-    const result = {}; // { yearIdx: { total: X, byExpense: { exIdx: Y } } }
-    
-    for(const r of dataJson.data) {
-        const [yIdx, dIdx, mIdx, eIdx, amt] = r;
-        
-        // Filter by Ministry or DeptGroup
-        if(type === 'deptGroup' && dIdx !== id) continue;
-        if(type === 'ministry' && mIdx !== id) continue;
-        
-        // Filter by Expense Types
-        if(expensesFilter && !expensesFilter.has(eIdx)) continue;
-        
-        if(!result[yIdx]) result[yIdx] = { total: 0, byExpense: {} };
+    var type = selection.type;
+    var id = selection.id;
+
+    var result = {};
+
+    for (var i = 0; i < dataJson.data.length; i++) {
+        var r = dataJson.data[i];
+        var yIdx = r[0], dIdx = r[1], mIdx = r[2], eIdx = r[3], amt = r[4];
+
+        if (type === 'deptGroup' && dIdx !== id) continue;
+        if (type === 'ministry' && mIdx !== id) continue;
+
+        if (expensesFilter && !expensesFilter.has(eIdx)) continue;
+
+        if (!result[yIdx]) result[yIdx] = { total: 0, byExpense: {} };
         result[yIdx].total += amt;
-        
-        if(!result[yIdx].byExpense[eIdx]) result[yIdx].byExpense[eIdx] = 0;
+
+        if (!result[yIdx].byExpense[eIdx]) result[yIdx].byExpense[eIdx] = 0;
         result[yIdx].byExpense[eIdx] += amt;
     }
-    
-    // Convert to sorted array
-    const sortedYears = Object.keys(result).map(Number).sort((a,b) => dataJson.years[a] - dataJson.years[b]);
-    
-    return sortedYears.map(yIdx => ({
-        year: dataJson.years[yIdx],
-        total: result[yIdx].total,
-        byExpense: result[yIdx].byExpense
-    }));
+
+    var sortedYears = Object.keys(result).map(Number).sort(function (a, b) {
+        return dataJson.years[a] - dataJson.years[b];
+    });
+
+    return sortedYears.map(function (yIdx) {
+        return {
+            year: dataJson.years[yIdx],
+            total: result[yIdx].total,
+            byExpense: result[yIdx].byExpense
+        };
+    });
 }
 
 function updateChart() {
-    if(!selectedMain) {
+    if (!selectedMain) {
         chartWrapper.classList.remove('active');
         emptyState.classList.remove('hidden');
         return;
@@ -282,38 +282,39 @@ function updateChart() {
     chartWrapper.classList.add('active');
     emptyState.classList.add('hidden');
 
-    const datasets = [];
-    const labels = dataJson.years.slice().sort((a,b) => a-b);
-    const scales = {};
+    var datasets = [];
+    var labels = dataJson.years.slice().sort(function (a, b) { return a - b; });
+    var scales = {};
 
-    let mainSeries = getSeriesData(selectedMain, selectedExpenses, isCombineOn);
+    var mainSeries = getSeriesData(selectedMain, selectedExpenses, isCombineOn);
 
-    const mainName = selectedMain.type === 'deptGroup' 
-        ? dataJson.deptGroups[selectedMain.id] 
+    var mainName = selectedMain.type === 'deptGroup'
+        ? dataJson.deptGroups[selectedMain.id]
         : dataJson.ministries[selectedMain.id];
 
-    chartTitle.textContent = \`\${mainName} Expenses\`;
+    chartTitle.textContent = mainName + ' — Expenses';
 
-    // Calculate Summary Stats
-    let totalAmt = 0;
-    let peakAmt = 0;
-    let peakYr = '-';
-    let recentAmt = 0;
-    let recentYr = '-';
-    
-    if(mainSeries.length > 0) {
-        for(const pt of mainSeries) {
+    // Summary Stats
+    var totalAmt = 0;
+    var peakAmt = 0;
+    var peakYr = '—';
+    var recentAmt = 0;
+    var recentYr = '—';
+
+    if (mainSeries.length > 0) {
+        for (var i = 0; i < mainSeries.length; i++) {
+            var pt = mainSeries[i];
             totalAmt += pt.total;
-            if(pt.total > peakAmt) {
+            if (pt.total > peakAmt) {
                 peakAmt = pt.total;
                 peakYr = pt.year;
             }
         }
-        const last = mainSeries[mainSeries.length - 1];
+        var last = mainSeries[mainSeries.length - 1];
         recentAmt = last.total;
         recentYr = last.year;
     }
-    
+
     document.getElementById('valTotal').textContent = formatValue(totalAmt);
     document.getElementById('valPeakYear').textContent = peakYr;
     document.getElementById('valPeakAmount').textContent = formatValue(peakAmt);
@@ -322,106 +323,99 @@ function updateChart() {
     document.getElementById('valAvg').textContent = mainSeries.length ? formatValue(totalAmt / mainSeries.length) : '—';
 
     // Build Chart Data
-    if (isCombineOn || selectedCompare.size > 0) {
-        // If "Compare With" is active, we force combine mode for the main dataset to avoid visual clutter
-        // Actually, user spec: "When unselected, the stacked bar chart will list the ExpenseType in the chart legend". 
-        // Doesn't strictly forbid "Compare With", but usually you can't compare a stacked bar chart with another line nicely on two axes.
-        // I will make the main series a stacked bar if !isCombineOn and NO comparisons. 
-        // If there ARE comparisons, maybe we just draw the main series as a bar (total) and comparisons as lines.
-        
-        if (!isCombineOn) {
-            // Stacked Bar for main selection
-            const expArray = Array.from(selectedExpenses);
-            expArray.forEach(eIdx => {
-                const expName = dataJson.expenseTypes[eIdx];
-                const color = PALETTE[eIdx % PALETTE.length];
-                
-                const dataPoints = labels.map(yr => {
-                    const found = mainSeries.find(s => s.year === yr);
-                    return found && found.byExpense[eIdx] ? found.byExpense[eIdx] : 0;
-                });
-                
-                datasets.push({
-                    type: 'bar',
-                    label: \`\${mainName} - \${expName}\`,
-                    data: dataPoints,
-                    backgroundColor: color,
-                    borderColor: 'transparent',
-                    yAxisID: 'y',
-                    stack: 'main'
-                });
+    if (!isCombineOn && selectedCompare.size === 0) {
+        // Stacked Bar for main selection
+        var expArray = Array.from(selectedExpenses);
+        expArray.forEach(function (eIdx) {
+            var expName = dataJson.expenseTypes[eIdx];
+            var color = PALETTE[eIdx % PALETTE.length];
+
+            var dataPoints = labels.map(function (yr) {
+                var found = mainSeries.find(function (s) { return s.year === yr; });
+                return found && found.byExpense[eIdx] ? found.byExpense[eIdx] : 0;
             });
-        } else {
-            // Combined Line/Bar
-            const dataPoints = labels.map(yr => {
-                const found = mainSeries.find(s => s.year === yr);
-                return found ? found.total : 0;
-            });
-            
+
             datasets.push({
                 type: 'bar',
-                label: \`\${mainName} (Total)\`,
+                label: mainName + ' — ' + expName,
                 data: dataPoints,
-                backgroundColor: 'rgba(59, 130, 246, 0.5)',
-                borderColor: '#3b82f6',
-                borderWidth: 1,
+                backgroundColor: color,
+                borderColor: 'transparent',
                 yAxisID: 'y',
+                stack: 'main'
             });
-        }
-        
-        // Add Comparisons
-        if (selectedCompare.size > 0) {
-            let colorIdx = 2; // start with amber/emerald etc
-            for(const compKey of selectedCompare) {
-                const [cType, cIdStr] = compKey.split(':');
-                const cId = Number(cIdStr);
-                const cSer = getSeriesData({ type: cType, id: cId }, selectedExpenses, true); // ALWAYS combined
-                const cName = cType === 'deptGroup' ? dataJson.deptGroups[cId] : dataJson.ministries[cId];
-                
-                const cDataPoints = labels.map(yr => {
-                    const found = cSer.find(s => s.year === yr);
-                    return found ? found.total : 0;
-                });
-                
-                datasets.push({
-                    type: 'line',
-                    label: \`\${cName} (Compare)\`,
-                    data: cDataPoints,
-                    borderColor: PALETTE[colorIdx % PALETTE.length],
-                    backgroundColor: 'transparent',
-                    borderWidth: 3,
-                    tension: 0.3,
-                    pointRadius: 4,
-                    yAxisID: 'y1'
-                });
-                colorIdx++;
-            }
-        }
-        
-        scales.y = {
-            type: 'linear',
-            position: 'left',
-            title: { display: true, text: 'Amount (Main)', color: '#8b95b0' },
-            ticks: { color: '#8b95b0', callback: v => formatValue(v) },
-            grid: { color: 'rgba(255,255,255,0.04)' }
-        };
-        
-        if (selectedCompare.size > 0) {
-            scales.y1 = {
-                type: 'linear',
-                position: 'right',
-                title: { display: true, text: 'Amount (Compare)', color: '#8b95b0' },
-                ticks: { color: '#8b95b0', callback: v => formatValue(v) },
-                grid: { drawOnChartArea: false }
-            };
-        }
+        });
+    } else {
+        // Combined Bar
+        var dataPoints = labels.map(function (yr) {
+            var found = mainSeries.find(function (s) { return s.year === yr; });
+            return found ? found.total : 0;
+        });
+
+        datasets.push({
+            type: 'bar',
+            label: mainName + ' (Total)',
+            data: dataPoints,
+            backgroundColor: 'rgba(59, 130, 246, 0.5)',
+            borderColor: '#3b82f6',
+            borderWidth: 1,
+            yAxisID: 'y',
+        });
     }
 
-    if(mainChart) mainChart.destroy();
-    const ctx = document.getElementById('mainChart').getContext('2d');
-    
+    // Add Comparisons
+    if (selectedCompare.size > 0) {
+        var colorIdx = 2;
+        selectedCompare.forEach(function (compKey) {
+            var parts = compKey.split(':');
+            var cType = parts[0];
+            var cId = Number(parts[1]);
+            var cSer = getSeriesData({ type: cType, id: cId }, selectedExpenses, true);
+            var cName = cType === 'deptGroup' ? dataJson.deptGroups[cId] : dataJson.ministries[cId];
+
+            var cDataPoints = labels.map(function (yr) {
+                var found = cSer.find(function (s) { return s.year === yr; });
+                return found ? found.total : 0;
+            });
+
+            datasets.push({
+                type: 'line',
+                label: cName + ' (Compare)',
+                data: cDataPoints,
+                borderColor: PALETTE[colorIdx % PALETTE.length],
+                backgroundColor: 'transparent',
+                borderWidth: 3,
+                tension: 0.3,
+                pointRadius: 4,
+                yAxisID: 'y1'
+            });
+            colorIdx++;
+        });
+    }
+
+    scales.y = {
+        type: 'linear',
+        position: 'left',
+        title: { display: true, text: 'Amount (Main)', color: '#8b95b0' },
+        ticks: { color: '#8b95b0', callback: function (v) { return formatValue(v); } },
+        grid: { color: 'rgba(255,255,255,0.04)' }
+    };
+
+    if (selectedCompare.size > 0) {
+        scales.y1 = {
+            type: 'linear',
+            position: 'right',
+            title: { display: true, text: 'Amount (Compare)', color: '#8b95b0' },
+            ticks: { color: '#8b95b0', callback: function (v) { return formatValue(v); } },
+            grid: { drawOnChartArea: false }
+        };
+    }
+
+    if (mainChart) mainChart.destroy();
+    var ctx = document.getElementById('mainChart').getContext('2d');
+
     mainChart = new Chart(ctx, {
-        data: { labels, datasets },
+        data: { labels: labels, datasets: datasets },
         options: {
             responsive: true,
             maintainAspectRatio: false,
@@ -430,13 +424,13 @@ function updateChart() {
                 legend: { labels: { color: '#f0f4fc' } },
                 tooltip: {
                     callbacks: {
-                        label: function(ctx) {
-                            return \`\${ctx.dataset.label}: \${formatValue(ctx.parsed.y)}\`;
+                        label: function (context) {
+                            return context.dataset.label + ': ' + formatValue(context.parsed.y);
                         }
                     }
                 }
             },
-            scales
+            scales: scales
         }
     });
 }
