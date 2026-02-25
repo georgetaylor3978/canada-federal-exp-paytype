@@ -133,6 +133,42 @@ body {
   background: rgba(16, 185, 129, 0.08);
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.hobo-link {
+  display: inline-block;
+  transition: all 0.3s ease;
+}
+
+.hobo-link:hover {
+  transform: scale(1.1);
+  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.5));
+}
+
+.hobo-img {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border-light);
+  transition: border-color 0.3s ease;
+}
+
+.hobo-link:hover .hobo-img {
+  border-color: var(--accent-blue);
+}
+
+.canada-flag {
+  font-size: 1rem;
+  -webkit-text-fill-color: initial;
+  background: none;
+  -webkit-background-clip: unset;
+}
+
 /* ═══════════ Controls Bar ═══════════ */
 .controls-bar {
   background: var(--bg-controls);
@@ -195,7 +231,8 @@ body {
   user-select: none;
 }
 
-.dropdown-trigger:hover, .custom-dropdown.open .dropdown-trigger {
+.dropdown-trigger:hover,
+.custom-dropdown.open .dropdown-trigger {
   border-color: var(--accent-blue);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
@@ -282,9 +319,11 @@ body {
 .dropdown-list::-webkit-scrollbar {
   width: 6px;
 }
+
 .dropdown-list::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .dropdown-list::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 10px;
@@ -315,7 +354,7 @@ body {
   color: var(--text-primary);
   margin-top: 6px;
   padding-top: 10px;
-  border-top: 1px solid rgba(255,255,255,0.03);
+  border-top: 1px solid rgba(255, 255, 255, 0.03);
 }
 
 .dd-item.is-parent .dd-icon {
@@ -439,7 +478,7 @@ body {
 
 .slicer-btn.active .slicer-color-indicator {
   opacity: 1;
-  box-shadow: 0 0 5px rgba(255,255,255,0.5);
+  box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
 }
 
 /* Combine Toggle Switch */
@@ -465,7 +504,7 @@ body {
   height: 26px;
 }
 
-.switch input { 
+.switch input {
   opacity: 0;
   width: 0;
   height: 0;
@@ -494,15 +533,15 @@ body {
   transition: .3s;
 }
 
-input:checked + .slider {
+input:checked+.slider {
   background: linear-gradient(135deg, var(--accent-blue), #2563eb);
   border-color: transparent;
 }
 
-input:checked + .slider:before {
+input:checked+.slider:before {
   background-color: white;
   transform: translateX(22px);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .slider.round {
